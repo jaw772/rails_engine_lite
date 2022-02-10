@@ -109,13 +109,40 @@ RSpec.describe 'Items' do
   end
 
   describe 'Find_Item' do
-    it '#search_one' do
+    it '#search_one name' do
       create(:item, name: "Small Aluminum Bag")
       create(:item, name: "Rustic Plastic Computer")
       create(:item, name: "Rustic Marble Bench")
       create(:item, name: "Durable Concrete Bottle")
 
       get "/api/v1/items/find?name=TiC"
+       expect(response).to be_successful
+
+      item = JSON.parse(response.body, symbolize_names: true)
+
+      expect(item[:data][:attributes][:name]).to eq "Rustic Plastic Computer"
+    end
+    it '#search_one min_price' do
+      create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+      create(:item, unit_price: 3.33, name: "Rustic Plastic Computer")
+      create(:item, unit_price: 5.55, name: "Rustic Marble Bench")
+      create(:item, unit_price: 7.77, name: "Durable Concrete Bottle")
+
+      get "/api/v1/items/find?min_price=5"
+       expect(response).to be_successful
+
+      item = JSON.parse(response.body, symbolize_names: true)
+
+      expect(item[:data][:attributes][:name]).to eq "Durable Concrete Bottle"
+    end
+
+    it '#search_one max_price' do
+      create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+      create(:item, unit_price: 3.33, name: "Rustic Plastic Computer")
+      create(:item, unit_price: 5.55, name: "Rustic Marble Bench")
+      create(:item, unit_price: 7.77, name: "Durable Concrete Bottle")
+
+      get "/api/v1/items/find?max_price=5"
        expect(response).to be_successful
 
       item = JSON.parse(response.body, symbolize_names: true)
@@ -138,6 +165,126 @@ RSpec.describe 'Items' do
       expect(name_list.include?("Rustic Plastic Computer")).to be true
       expect(name_list.include?("Rustic Marble Bench")).to be true
       expect(name_list.include?("Durable Concrete Bottle")).to be false
+    end
+
+    describe 'sad paths' do
+      it '#update incorrect info given' do
+        item_1 = create(:item, name: "Flat Dull Ball", description: "Gray", unit_price: 1.11)
+        new_item_params = ({
+          name: "Super Bouncy Ball",
+          description: "Rainbow",
+          unit_price: "",
+          })
+        headers = {"CONTENT_TYPE" => "application/json"}
+
+        put "/api/v1/items/#{item_1.id}", headers: headers, params: JSON.generate(item: new_item_params)
+
+        expect(response).to_not be_successful
+      end
+
+      it '#search_one, max_price value is less than 0' do
+        create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+        create(:item, unit_price: 3.33, name: "Rustic Plastic Computer")
+        create(:item, unit_price: 5.55, name: "Rustic Marble Bench")
+        create(:item, unit_price: 7.77, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find?max_price=-5"
+        expect(response).to_not be_successful
+
+        item = JSON.parse(response.body, symbolize_names: true)
+
+        expect(item[:error]).to eq "error"
+      end
+
+      it '#search_one, min_price value is less than 0' do
+        create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+        create(:item, unit_price: 3.33, name: "Rustic Plastic Computer")
+        create(:item, unit_price: 5.55, name: "Rustic Marble Bench")
+        create(:item, unit_price: 7.77, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find?min_price=-5"
+        expect(response).to_not be_successful
+
+        item = JSON.parse(response.body, symbolize_names: true)
+
+        expect(item[:error]).to eq "error"
+      end
+
+      it '#search_one, multiple queries are used' do
+        create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+
+        get "/api/v1/items/find?name=ring&max_price=50"
+
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_one, name result is not found' do
+        create(:item, name: "Small Aluminum Bag")
+        create(:item, name: "Rustic Plastic Computer")
+        create(:item, name: "Rustic Marble Bench")
+        create(:item, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find?name=too"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_one, min_price result is not found' do
+        create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+        create(:item, unit_price: 3.33, name: "Rustic Plastic Computer")
+        create(:item, unit_price: 5.55, name: "Rustic Marble Bench")
+        create(:item, unit_price: 7.77, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find?min_price=12.00"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_one, max_price result is not found' do
+        create(:item, unit_price: 1.11, name: "Small Aluminum Bag")
+        create(:item, unit_price: 3.33, name: "Rustic Plastic Computer")
+        create(:item, unit_price: 5.55, name: "Rustic Marble Bench")
+        create(:item, unit_price: 7.77, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find?max_price=1.00"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_all, name result is not found' do
+        create(:item, name: "Small Aluminum Bag")
+        create(:item, name: "Rustic Plastic Computer")
+        create(:item, name: "Rustic Marble Bench")
+        create(:item, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find_all?name=t34"
+        # require "pry"; binding.pry
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_all no query given' do
+        create(:item, name: "Small Aluminum Bag")
+        create(:item, name: "Rustic Plastic Computer")
+        create(:item, name: "Rustic Marble Bench")
+        create(:item, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find_all?"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_one no query given' do
+        create(:item, name: "Small Aluminum Bag")
+        create(:item, name: "Rustic Plastic Computer")
+        create(:item, name: "Rustic Marble Bench")
+        create(:item, name: "Durable Concrete Bottle")
+
+        get "/api/v1/items/find?"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
     end
   end
 end

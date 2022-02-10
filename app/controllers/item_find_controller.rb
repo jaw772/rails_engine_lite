@@ -25,13 +25,15 @@ class ItemFindController < ApplicationController
         if params[:max_price].to_f > 0
           item = Item.where("unit_price <= ?", params[:max_price]).order(name: :asc).first
           if item == nil
-            render status: 400, json: ItemSerializer.new(Item.create().errors)
+            render status: 400, json: JSON.generate({error: 'error'})
           else
             render json: ItemSerializer.new(item)
           end
         else
             render json: JSON.generate({error: 'error'}) , status: 400
         end
+      else
+        render json: JSON.generate({error: 'error'}), status: 400
       end
     end
   end
@@ -39,13 +41,13 @@ class ItemFindController < ApplicationController
   def search_all
     if params[:name]
       item = Item.where("name ILIKE ?", "%#{params[:name]}%")
-      if item == nil
-        render json: ItemSerializer.new(Item.create())
+      if item == []
+        render json: JSON.generate({data: [{error: 'error'}]}), status: 400
       else
         render json: ItemSerializer.new(item)
       end
     else
-      render json: ItemSerializer.new(Item.create())
+      render json: JSON.generate({error: 'error'}), status: 400
     end
   end
 end

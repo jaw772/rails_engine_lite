@@ -83,5 +83,54 @@ RSpec.describe 'Merchant' do
       expect(name_list.include?("Rustic Marble Company")).to be true
       expect(name_list.include?("Durable Concrete Company")).to be false
     end
+
+    describe 'sad paths' do
+      it '#search_one, name result is not found' do
+        create(:merchant, name: "Small Aluminum Company")
+        create(:merchant, name: "Rustic Plastic Company")
+        create(:merchant, name: "Rustic Marble Company")
+        create(:merchant, name: "Durable Concrete Company")
+
+        get "/api/v1/merchants/find?name=too"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_all, name result is not found' do
+        create(:merchant, name: "Small Aluminum Company")
+        create(:merchant, name: "Rustic Plastic Company")
+        create(:merchant, name: "Rustic Marble Company")
+        create(:merchant, name: "Durable Concrete Company")
+
+        get "/api/v1/merchants/find_all?name=t34"
+        # require "pry"; binding.pry
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_all no query given' do
+        create(:merchant, name: "Small Aluminum Company")
+        create(:merchant, name: "Rustic Plastic Company")
+        create(:merchant, name: "Rustic Marble Company")
+        create(:merchant, name: "Durable Concrete Company")
+
+        get "/api/v1/merchants/find_all?"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+      it '#search_one no query given' do
+        create(:item, name: "Small Aluminum Bag")
+        create(:item, name: "Rustic Plastic Computer")
+        create(:item, name: "Rustic Marble Bench")
+        create(:item, name: "Durable Concrete Bottle")
+
+        get "/api/v1/merchants/find?"
+        expect(response).to_not be_successful
+        expect(response.status).to eq 400
+      end
+
+    end
+
   end
 end
