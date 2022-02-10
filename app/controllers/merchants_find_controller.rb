@@ -3,7 +3,7 @@ class MerchantsFindController < ApplicationController
     if params[:name]
       merchant = Merchant.where("name ILIKE ?", "%#{params[:name]}%")
       if merchant == []
-        render json: JSON.generate({error: 'error'}), status: 400
+        render json: MerchantSerializer.new(merchant)
       else
         render json: MerchantSerializer.new(merchant)
       end

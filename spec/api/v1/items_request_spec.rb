@@ -259,9 +259,10 @@ RSpec.describe 'Items' do
         create(:item, name: "Durable Concrete Bottle")
 
         get "/api/v1/items/find_all?name=t34"
-        # require "pry"; binding.pry
-        expect(response).to_not be_successful
-        expect(response.status).to eq 400
+        item = JSON.parse(response.body, symbolize_names: true)
+        expect(response).to be_successful
+        expect(response.status).to eq 200
+        expect(item[:data]).to eq []
       end
 
       it '#search_all no query given' do

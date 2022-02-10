@@ -42,7 +42,7 @@ class ItemFindController < ApplicationController
     if params[:name]
       item = Item.where("name ILIKE ?", "%#{params[:name]}%")
       if item == []
-        render json: JSON.generate({data: [{error: 'error'}]}), status: 400
+        render json: ItemSerializer.new(item)
       else
         render json: ItemSerializer.new(item)
       end
